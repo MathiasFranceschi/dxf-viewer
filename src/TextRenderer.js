@@ -505,7 +505,6 @@ class TextBox {
 
             case MTextFormatParser.EntityType.COLOR:
                 curColor = item.color
-                console.log(curColor)//XXX
                 this.curParagraph.SetColor(curColor)
                 break
             }
@@ -706,11 +705,26 @@ TextBox.Paragraph = class {
 
         for (; curChunkIdx < this.chunks.length; curChunkIdx++) {
             const chunk = this.chunks[curChunkIdx]
-            const chunkWidth = chunk.GetWidth(startChunkIdx === 0 || curChunkIdx !== startChunkIdx)
-            if (boxWidth !== null && boxWidth !== 0 && curWidth !== 0 &&
-                curWidth + chunkWidth > boxWidth) {
-
-                CommitLine()
+            let chunkWidth = chunk.GetWidth(startChunkIdx === 0 || curChunkIdx !== startChunkIdx)
+            if (boxWidth !== null && boxWidth !== 0) {
+                if (curWidth + chunkWidth > boxWidth) {
+                    if (curChunkIdx == 0 && chunk.leadingSpaces > 0) {
+                        /* Special handling for initial leading spaces. In case the first word with
+                         * spaces exceeds box width, empty line should be inserted for spaces, and
+                         * the word is placed on the next line. This behavior is described in ezdxf
+                         * (https://ezdxf.readthedocs.io/en/stable/dxfinternals/rendering_of_dxf_content.html#mtext)
+                         * and reported by users as actual AutoCAD behavior.
+                         */
+                        this.lines.push(
+                            new TextBox.Paragraph.Line(this, startChunkIdx, startChunkIdx, 0))
+                        /* Trim leading spaces in next line with the word. */
+                        chunk.leadingSpaces = 0
+                        chunkWidth = chunk.GetWidth(false)
+                    }
+                    if (curWidth !== 0) {
+                        CommitLine()
+                    }
+                }
             }
             chunk.position = curWidth
             curWidth += chunkWidth
