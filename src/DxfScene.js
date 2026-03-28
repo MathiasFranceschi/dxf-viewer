@@ -2118,8 +2118,10 @@ export class DxfScene {
             return color
         }
         if (color === ColorCode.BY_BLOCK) {
-            /* BY_BLOCK is not useful when not in block so replace it by layer as well. */
-            color = ColorCode.BY_LAYER
+            /* BY_BLOCK is not useful when not in block. As reported by users, AutoCAD uses white
+             * color in such case.
+             */
+            return 0xffffff
         }
         if (color === ColorCode.BY_LAYER) {
             if (entity.hasOwnProperty("layer")) {
