@@ -1,7 +1,10 @@
 /** Parses MTEXT formatted text into more convenient intermediate representation. The MTEXT
- * formatting is not well documented, the only source I found:
- * https://adndevblog.typepad.com/autocad/2017/09/dissecting-mtext-format-codes.html
+ * formatting is not well documented, the only sources I found:
+ * https://web.archive.org/web/20250910173415/https://adndevblog.typepad.com/autocad/2017/09/dissecting-mtext-format-codes.html
+ * https://ezdxf.readthedocs.io/en/stable/dxfentities/mtext.html#mtext-inline-codes
  */
+
+import colorTable from "./parser/AutoCadColorIndex"
 
 const State = Object.freeze({
     TEXT: 0,
@@ -11,7 +14,9 @@ const State = Object.freeze({
     /* For \pxq* paragraph formatting. Not found documentation yet, so temporal naming for now. */
     PARAGRAPH1: 3,
     PARAGRAPH2: 4,
-    PARAGRAPH3: 5
+    PARAGRAPH3: 5,
+    /* Parsing \Cxxx color code. */
+    COLOR: 6
 })
 
 const EntityType = Object.freeze({
@@ -22,8 +27,9 @@ const EntityType = Object.freeze({
     /** "alignment" property is either "r", "c", "l", "j", "d" for right, center, left, justify
      * (seems to be the same as left), distribute (justify) alignment.
      */
-    PARAGRAPH_ALIGNMENT: 4
-
+    PARAGRAPH_ALIGNMENT: 4,
+    /** \Cxxx color code. "color" property specified (index resolved to actual color value). */
+    COLOR: 5
     /* Many others are not yet implemented. */
 })
 
@@ -68,6 +74,19 @@ export class MTextFormatParser {
 
         function EmitEntity(type) {
             curEntities.push({type: type})
+        }
+
+        function EmitColor() {
+            const s = text.slice(textStart, curPos)
+            const colorIndex = parseInt(s)
+            if (isNaN(colorIndex)) {
+                return
+            }
+            if (colorIndex < 1 || colorIndex > 255) {
+                return
+            }
+            /* We actually allow whole color table indices for better compatibility. */
+            curEntities.push({type: EntityType.COLOR, color: colorTable[colorIndex]})
         }
 
         function PushScope() {
@@ -137,6 +156,10 @@ export class MTextFormatParser {
                     case "p":
                         state = State.PARAGRAPH1
                         continue
+                    case "C":
+                        state = State.COLOR
+                        textStart = curPos + 1
+                        continue
                     }
                     state = State.SKIP_FORMAT
                     continue
@@ -167,6 +190,14 @@ export class MTextFormatParser {
 
             case State.SKIP_FORMAT:
                 if (c === ";") {
+                    textStart = curPos + 1
+                    state = State.TEXT
+                }
+                continue
+
+            case State.COLOR:
+                if (c === ";") {
+                    EmitColor()
                     textStart = curPos + 1
                     state = State.TEXT
                 }

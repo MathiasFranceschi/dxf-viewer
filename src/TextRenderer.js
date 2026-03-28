@@ -453,6 +453,8 @@ class TextBox {
 
         /* Null is default alignment which depends on attachment point. */
         let curAlignment = null
+        /* Null for default color which depends on entity color attributes. */
+        let curColor = null
 
         for (const item of FlattenItems(formattedText)) {
             switch(item.type) {
@@ -470,6 +472,7 @@ class TextBox {
             case MTextFormatParser.EntityType.PARAGRAPH:
                 this.curParagraph = new TextBox.Paragraph(this)
                 this.curParagraph.SetAlignment(curAlignment)
+                this.curParagraph.SetColor(curColor)
                 this.paragraphs.push(this.curParagraph)
                 break
 
@@ -498,6 +501,12 @@ class TextBox {
                 }
                 this.curParagraph.SetAlignment(a)
                 curAlignment = a
+                break
+
+            case MTextFormatParser.EntityType.COLOR:
+                curColor = item.color
+                console.log(curColor)//XXX
+                this.curParagraph.SetColor(curColor)
                 break
             }
         }
@@ -637,6 +646,8 @@ TextBox.Paragraph = class {
         this.curChunk = null
         this.alignment = null
         this.lines = null
+        //XXX for now applied to next chunks until advanced formatting implemented
+        this.color = null
     }
 
     /** Feed character for current chunk. Spaces should be fed by FeedSpace() method. If space
@@ -662,6 +673,13 @@ TextBox.Paragraph = class {
 
     SetAlignment(alignment) {
         this.alignment = alignment
+    }
+
+    /** Sets color for next chunks. Actually should do this for spans, but not currently
+     * implemented.
+     */
+    SetColor(color) {
+        this.color = color
     }
 
     /** Group chunks into lines.
@@ -724,7 +742,8 @@ TextBox.Paragraph = class {
     }
 
     _AddChunk() {
-        this.curChunk = new TextBox.Paragraph.Chunk(this, this.textBox.fontSize, this.curChunk)
+        this.curChunk = new TextBox.Paragraph.Chunk(this, this.textBox.fontSize, this.color,
+                                                    this.curChunk)
         this.chunks.push(this.curChunk)
     }
 }
@@ -740,11 +759,13 @@ TextBox.Paragraph.Chunk = class {
     /**
      * @param {TextBox.Paragraph} paragraph
      * @param {number} fontSize
+     * @param {number|null} color
      * @param {?TextBox.Paragraph.Chunk} prevChunk
      */
-    constructor(paragraph, fontSize, prevChunk) {
+    constructor(paragraph, fontSize, color, prevChunk) {
         this.paragraph = paragraph
         this.fontSize = fontSize
+        this.color = color
         this.prevChunk = prevChunk
         this.lastChar = null
         this.lastShape = null
@@ -790,7 +811,7 @@ TextBox.Paragraph.Chunk = class {
         }
 
         if (this.block === null) {
-            this.block = new TextBlock(this.fontSize)
+            this.block = new TextBlock(this.fontSize, this.color)
         }
         this.block.PushChar(char, shape)
 
@@ -865,8 +886,9 @@ TextBox.Paragraph.Line = class {
 
 /** Encapsulates calculations for a single-line text block. */
 class TextBlock {
-    constructor(fontSize) {
+    constructor(fontSize, color) {
         this.fontSize = fontSize
+        this.color = color
         /* Element is {shape: CharShape, vertices: ?{Vector2}[]} */
         this.glyphs = []
         this.bounds = null
@@ -1031,7 +1053,7 @@ class TextBlock {
                    type: Entity.Type.TRIANGLES,
                    vertices: glyph.vertices,
                    indices: glyph.shape.indices,
-                   layer, color
+                   layer, color: this.color ?? color
                })
             }
         }
