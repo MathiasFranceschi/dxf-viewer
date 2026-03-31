@@ -93,7 +93,8 @@ example file that demonstrates the problem by attaching it to a created issue. C
 examples in CAD software can also be very helpful. Additionally, creating examples in various
 proprietary CAD software to which I do not have access would be highly valuable. Since the entrance
 level to start coding in this project is quite high, it is often more useful to receive a detailed
-issue report with sample files rather than a pull request.
+issue report with sample files rather than a pull request. Also issue pre-analysis is very welcome,
+if one could find or guess exact reason of the renderer incorrect behavior.
 
 ## License
 

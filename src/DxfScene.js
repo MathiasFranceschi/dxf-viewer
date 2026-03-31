@@ -226,6 +226,7 @@ export class DxfScene {
                    entity.type === "ATTRIB"
         }
 
+        /* Should return false if unable to resolve some characters, true otherwise. */
         const ProcessEntity = async (entity) => {
             if (!this._FilterEntity(entity)) {
                 return true
@@ -273,7 +274,7 @@ export class DxfScene {
                     /* Failing to resolve some character means that all fonts have been loaded and
                      * checked. No mean to check the rest strings. However until it is encountered,
                      * all strings should be checked, even if all fonts already loaded. This needed
-                     * to properly set hasMissingChars which allows displaying some warning in a
+                     * to properly set `hasMissingChars` which allows displaying some warning in a
                      * viewer.
                      */
                     return
