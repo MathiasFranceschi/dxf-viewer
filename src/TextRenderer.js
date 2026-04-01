@@ -1,7 +1,5 @@
 import {Entity} from "./DxfScene.js"
-import {ShapePath} from "three/src/extras/core/ShapePath.js"
-import {ShapeUtils} from "three/src/extras/ShapeUtils.js"
-import {Matrix3, Vector2} from "three"
+import {ShapePath, ShapeUtils, Matrix3, Vector2} from "three"
 import {MTextFormatParser} from "./MTextFormatParser.js"
 
 /** Regex for parsing special characters in text entities. */
