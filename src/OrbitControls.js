@@ -17,18 +17,31 @@ export class OrbitControls extends ThreeOrbitControls {
         this.mouseZoomSpeedFactor = 1
         this.zoomToCursor = true
 
-        // Intercept wheel events to temporarily adjust zoomSpeed for mouse wheel
-        // (before OrbitControls processes them). This replicates the original
-        // dxf-viewer custom behavior of separate mouse/touch zoom speeds.
         this._baseZoomSpeed = this.zoomSpeed
-        domElement.addEventListener("wheel", (e) => {
+        this._isMouseWheel = false
+
+        // Flag mouse wheel events so _getZoomScale knows to apply the factor
+        domElement.addEventListener("wheel", () => {
+            this._isMouseWheel = true
             this._baseZoomSpeed = this.zoomSpeed
-            this.zoomSpeed = this._baseZoomSpeed * this.mouseZoomSpeedFactor
         }, { capture: true, passive: true })
 
         domElement.addEventListener("wheel", () => {
-            // Restore after OrbitControls has processed the event
-            this.zoomSpeed = this._baseZoomSpeed
+            this._isMouseWheel = false
         }, { capture: false, passive: true })
+    }
+
+    /**
+     * Override _getZoomScale to apply mouseZoomSpeedFactor for wheel events
+     * and use delta-independent scaling (matching pre-0.170 behavior) so that
+     * fine-grained scroll devices (trackpads) remain responsive.
+     */
+    _getZoomScale(_delta) {
+        if (this._isMouseWheel) {
+            return Math.pow(0.95, this.zoomSpeed * this.mouseZoomSpeedFactor)
+        }
+        // Touch / programmatic: use stock delta-based formula
+        const normalizedDelta = Math.abs(_delta * 0.01)
+        return Math.pow(0.95, this.zoomSpeed * normalizedDelta)
     }
 }
