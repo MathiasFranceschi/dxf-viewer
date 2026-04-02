@@ -441,7 +441,7 @@ export class DxfViewer {
             TWO: three.TOUCH.DOLLY_PAN
         }
         controls.zoomSpeed = 3
-        controls.mouseZoomSpeedFactor = 0.05
+        controls.mouseZoomSpeedFactor = 0.5
         controls.target = new three.Vector3(this.camera.position.x, this.camera.position.y, 0)
         controls.addEventListener("change", () => {
             this.Render()
